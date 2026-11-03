@@ -1,0 +1,2 @@
+cf4e884dcdd4b5860a49088ecc6cdd143ce5d266aaad91147d28702247759d1b  Pause-0.3.0-debug.apk
+7e4187bb620ba8fb4813f489195cd5e17a4959e4f67c2779aa6b6207b56ee22e  app-release-unsigned.apk

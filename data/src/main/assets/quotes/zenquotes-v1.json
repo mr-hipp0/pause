@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "collectionVersion": "2026-11-03.1",
+  "source": "ZenQuotes",
+  "sourceUrl": "https://zenquotes.io/",
+  "retrievedAt": "2026-11-03T13:39:49Z",
+  "sourceEndpoint": "https://zenquotes.io/api/quotes",
+  "attribution": "Inspirational quotes provided by ZenQuotes API",
+  "usage": "Personal non-commercial local API cache; public redistribution rights have not been established.",
+  "quotes": [
+    {
+      "id": "zen-1e6d0661cc3a99b990d3e53d",
+      "text": "You know the more one does the more one can do.",
+      "author": "Amelia Earhart"
+    },
+    {
+      "id": "zen-6089d7f1f74d6012c8db968e",
+      "text": "Nothing is hopeless; we must hope for everything.",
+      "author": "Euripides"
+    },
+    {
+      "id": "zen-dccbca8af8388ff9afbb5e2c",
+      "text": "Sometimes letting things go is an act of far greater power than defending or hanging on.",
+      "author": "Eckhart Tolle"
+    },
+    {
+      "id": "zen-bab02f57d10e7eb2fd59b8e5",
+      "text": "Definiteness of purpose is the starting point of all achievement.",
+      "author": "W. Clement Stone"
+    },
+    {
+      "id": "zen-21552e728ee29bae4c9a18fc",
+      "text": "When you say yes to change, you are choosing to navigate that path peacefully and happily and see where it takes you.",
+      "author": "Sonia Ricotti"
+    },
+    {
+      "id": "zen-fb62348889aaf509519e9c30",
+      "text": "No man is happy unless he believes he is.",
+      "author": "Publilius Syrus"
+    },
+    {
+      "id": "zen-7b1a2090e8f0bdfc6155bd22",
+      "text": "We cannot change anything unless we accept it.",
+      "author": "Carl Jung"
+    },
+    {
+      "id": "zen-54eedd1b0342dde6e7378f41",
+      "text": "Everything is in your own heart.",
+      "author": "Thich Nhat Hanh"
+    },
+    {
+      "id": "zen-19e389a5d750dcf74dec1d4f",
+      "text": "People are not disturbed by things, but by the views they take of them.",
+      "author": "Epictetus"
+    },
+    {
+      "id": "zen-4fcb267e849fead978836c3a",
+      "text": "When you change what you believe, you change what you do.",
+      "author": "Spencer Johnson"
+    },
+    {
+      "id": "zen-23e0071294777805566801bd",
+      "text": "What do we live for, if it is not to make life less difficult for each other?",
+      "author": "George Eliot"
+    },
+    {
+      "id": "zen-1227eae325fedae98c859d9a",
+      "text": "Among the things you can give and still keep are your word, a smile, and a grateful heart.",
+      "author": "Zig Ziglar"
+    },
+    {
+      "id": "zen-d99cb65341407b2df2fb7ed8",
+      "text": "The more we have the less we own.",
+      "author": "Meister Eckhart"
+    },
+    {
+      "id": "zen-bf0ec83ecbc3730938a22b78",
+      "text": "We meet ourselves time and again in a thousand disguises on the path of life.",
+      "author": "Carl Jung"
+    },
+    {
+      "id": "zen-f983b329cd9c2b8ce07826e2",
+      "text": "If you don't have time to do it right, when will you have time to do it over?",
+      "author": "John Wooden"
+    },
+    {
+      "id": "zen-1bcbd438ff3726ec3f25aa0c",
+      "text": "Problems remain as problems because people are busy defending them rather than finding solutions.",
+      "author": "Celestine Chua"
+    }
+  ]
+}

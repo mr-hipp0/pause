@@ -1,0 +1,2 @@
+94866534e535a2053320ea2c2d4b501ea957b9cee3cb03bbe0a9be38cde8f83d  app-debug.apk
+56ef2092196b0ca9926aabd1a30d6a39f93ca29b76b8bc364e72eca9cf9a333c  app-release-unsigned.apk

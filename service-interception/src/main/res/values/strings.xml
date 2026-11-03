@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pause_service_label">Pause app protection</string>
+    <string name="pause_service_description">Pause notices protected apps, presents a breathing exercise, and lets you choose up to five minutes of on-screen app time. When the allowance expires, it intervenes again. It uses package names without reading screen text or typing. Your settings and history stay on your device. You can disable protection here at any time.</string>
+    <string name="pause_intervention_channel">App interventions</string>
+    <string name="pause_intervention_notification_title">Take a moment with Pause</string>
+    <string name="pause_intervention_notification_body">Tap to complete your intervention before returning to %1$s.</string>
+</resources>

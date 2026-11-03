@@ -1,0 +1,2 @@
+385a2383a9dc7694c0ac36a2db79532f400201bfb13dcc396e380d17b35480ca  artifacts/Pause-0.4.0-debug.apk
+6ede601c1de505cd301f4874f2abcdfcc42ee4129d708c740874ab1747370655  app/build/outputs/apk/release/app-release-unsigned.apk

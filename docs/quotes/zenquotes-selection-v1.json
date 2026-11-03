@@ -1,0 +1,24 @@
+{
+  "sourceEndpoint": "https://zenquotes.io/api/quotes",
+  "batchSha256": "44f5c20433f4accb051cf3085f4118ffc6ccb088f45f14c41070457ffc9bd3c0",
+  "reviewedAt": "2026-11-03",
+  "reviewScope": "Length, relevance, tone, duplicate and obvious attribution problems. Author names remain the provider attribution, not independently authenticated primary-source citations.",
+  "selectedIds": [
+    "zen-1e6d0661cc3a99b990d3e53d",
+    "zen-6089d7f1f74d6012c8db968e",
+    "zen-dccbca8af8388ff9afbb5e2c",
+    "zen-bab02f57d10e7eb2fd59b8e5",
+    "zen-21552e728ee29bae4c9a18fc",
+    "zen-fb62348889aaf509519e9c30",
+    "zen-7b1a2090e8f0bdfc6155bd22",
+    "zen-54eedd1b0342dde6e7378f41",
+    "zen-19e389a5d750dcf74dec1d4f",
+    "zen-4fcb267e849fead978836c3a",
+    "zen-23e0071294777805566801bd",
+    "zen-1227eae325fedae98c859d9a",
+    "zen-d99cb65341407b2df2fb7ed8",
+    "zen-bf0ec83ecbc3730938a22b78",
+    "zen-f983b329cd9c2b8ce07826e2",
+    "zen-1bcbd438ff3726ec3f25aa0c"
+  ]
+}

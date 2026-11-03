@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Pause.Intervention" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">#171619</item>
+        <item name="android:navigationBarColor">#171619</item>
+        <item name="android:windowBackground">#171619</item>
+        <item name="android:colorAccent">#BDB7FF</item>
+    </style>
+</resources>

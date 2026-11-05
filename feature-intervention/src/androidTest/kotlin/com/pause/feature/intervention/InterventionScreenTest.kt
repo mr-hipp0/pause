@@ -25,13 +25,55 @@ import org.junit.runner.RunWith
 class InterventionScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun completedBreathWaitsForContinueBeforeShowingTimeSelection() {
+        val state = mutableStateOf(session(InterventionPhase.BREATHING, remaining = 50L))
+        var started = false
+        compose.setContent {
+            PauseTheme {
+                InterventionScreen(state.value, {}, { started = true }, {},
+                    onContinue = { state.value = state.value.copy(phase = InterventionPhase.SELECTION) }, quote = testQuote)
+            }
+        }
+        compose.onNodeWithText("Continue").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(phase = InterventionPhase.DECISION, remainingMillis = 0L) }
+        compose.onNodeWithText("Do you still want to open YouTube?").assertIsDisplayed()
+        compose.onNodeWithText("Breathing complete.").assertIsDisplayed()
+        compose.onNodeWithTag("breathing-circle").assertIsDisplayed()
+        compose.onNodeWithText("Continue").assertIsDisplayed()
+        val leave = compose.onNodeWithText("Leave").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val page = compose.onNodeWithTag("intervention-page").fetchSemanticsNode().boundsInRoot
+        assertTrue("Both choices should fit the standard viewport", leave.bottom <= page.bottom)
+        compose.onNodeWithContentDescription("App usage duration in seconds").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Start app session").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(60_000L)
+        compose.runOnIdle { assertFalse(started); assertEquals(InterventionPhase.DECISION, state.value.phase) }
+        compose.onNodeWithText("Continue").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("App usage duration in seconds").assertIsDisplayed()
+        compose.onNodeWithText("Continue").assertDoesNotExist()
+        compose.runOnIdle { assertFalse(started) }
+    }
+
+    @Test fun leaveEndsDecisionWithoutContinuingOrStartingApp() {
+        var cancelled = false
+        var continued = false
+        var started = false
+        compose.setContent {
+            PauseTheme {
+                InterventionScreen(session(InterventionPhase.DECISION), {}, { started = true }, { cancelled = true },
+                    onContinue = { continued = true })
+            }
+        }
+        compose.onNodeWithText("Leave").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertTrue(cancelled); assertFalse(continued); assertFalse(started) }
+    }
+
     @Test fun usageSliderCapsAtFiveMinutesAndStartsAppOnlyOnExplicitAction() {
         val state = mutableStateOf(session(InterventionPhase.SELECTION, selected = 295))
         var started = false
         compose.setContent {
             PauseTheme {
                 InterventionScreen(state.value, onDurationChange = { state.value = state.value.copy(selectedSeconds = it) },
-                    onStart = { started = true }, onCancel = {})
+                    onStart = { started = true }, onCancel = {}, onContinue = {})
             }
         }
         compose.onNodeWithContentDescription("App usage duration in seconds")
@@ -54,7 +96,7 @@ class InterventionScreenTest {
         compose.setContent {
             PauseTheme {
                 InterventionScreen(state.value, onDurationChange = { state.value = state.value.copy(selectedSeconds = it) },
-                    onStart = {}, onCancel = {})
+                    onStart = {}, onCancel = {}, onContinue = {})
             }
         }
         val dial = compose.onNodeWithContentDescription("App usage duration in seconds")
@@ -73,7 +115,7 @@ class InterventionScreenTest {
     @Test fun breathingQuoteIsOptionalAndStableAcrossTimerUpdates() {
         val state = mutableStateOf(session(InterventionPhase.BREATHING, remaining = 5_000L))
         compose.setContent {
-            PauseTheme { InterventionScreen(state.value, {}, {}, {}, quote = testQuote) }
+            PauseTheme { InterventionScreen(state.value, {}, {}, {}, {}, quote = testQuote) }
         }
         compose.onNodeWithContentDescription("Breathing reflection").assertIsDisplayed()
         compose.onNodeWithText(testQuote.text).assertIsDisplayed()
@@ -93,7 +135,7 @@ class InterventionScreenTest {
         var openedSource = false
         compose.setContent {
             PauseTheme {
-                InterventionScreen(session(InterventionPhase.BREATHING, remaining = 5_000L), {}, {}, {},
+                InterventionScreen(session(InterventionPhase.BREATHING, remaining = 5_000L), {}, {}, {}, {},
                     quote = quote.value, onQuoteSource = { openedSource = true })
             }
         }
@@ -105,23 +147,38 @@ class InterventionScreenTest {
         compose.runOnIdle { assertTrue(openedSource) }
     }
 
-    @Test fun quoteAppearsOnlyDuringBreathingAndCancellationRemainsReachable() {
+    @Test fun quoteRemainsThroughDecisionAndCancellationRemainsReachable() {
         val state = mutableStateOf(session(InterventionPhase.BREATHING, remaining = 5_000L))
         var cancelled = false
+        var openedSource = false
         compose.setContent {
-            PauseTheme { InterventionScreen(state.value, {}, {}, { cancelled = true }, quote = testQuote) }
+            PauseTheme {
+                InterventionScreen(state.value, {}, {}, { cancelled = true }, {}, quote = testQuote,
+                    onQuoteSource = { openedSource = true })
+            }
         }
         compose.onNodeWithText("Return to what matters").performScrollTo().performClick()
-        compose.runOnIdle { assertTrue(cancelled); state.value = state.value.copy(phase = InterventionPhase.SELECTION) }
+        compose.runOnIdle { assertTrue(cancelled); state.value = state.value.copy(phase = InterventionPhase.DECISION, remainingMillis = 0L) }
+        compose.onNodeWithText(testQuote.text).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Inspirational quotes provided by ZenQuotes API. Open website")
+            .performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(openedSource) }
+        compose.onNodeWithText("Leave").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { state.value = state.value.copy(phase = InterventionPhase.SELECTION) }
         compose.onNodeWithContentDescription("Breathing reflection").assertDoesNotExist()
         compose.onNodeWithContentDescription("Start app session").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun previewEndsWithoutOfferingAnAppLaunch() {
         var finished = false
+        val state = mutableStateOf(session(InterventionPhase.DECISION).copy(isPreview = true))
         compose.setContent {
-            PauseTheme { InterventionScreen(session(InterventionPhase.SELECTION).copy(isPreview = true), {}, { finished = true }, {}) }
+            PauseTheme {
+                InterventionScreen(state.value, {}, { finished = true }, {},
+                    onContinue = { state.value = state.value.copy(phase = InterventionPhase.SELECTION) })
+            }
         }
+        compose.onNodeWithText("Continue").assertIsDisplayed().performClick()
         compose.onNodeWithText("Finish preview").assertIsDisplayed().performClick()
         compose.runOnIdle { assertTrue(finished) }
         compose.onNodeWithText("Continue to YouTube").assertDoesNotExist()
@@ -129,7 +186,7 @@ class InterventionScreenTest {
 
     @Test fun breathingUsesViewportAndQuotesOffExpandsTheCircle() {
         val state = mutableStateOf(session(InterventionPhase.BREATHING, remaining = 5_000L))
-        compose.setContent { PauseTheme { InterventionScreen(state.value, {}, {}, {}, quote = testQuote) } }
+        compose.setContent { PauseTheme { InterventionScreen(state.value, {}, {}, {}, {}, quote = testQuote) } }
         val withQuotes = compose.onNodeWithTag("breathing-circle").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle { state.value = state.value.copy(config = state.value.config.copy(showQuotes = false)) }
         val withoutQuotes = compose.onNodeWithTag("breathing-circle").fetchSemanticsNode().boundsInRoot
@@ -152,7 +209,10 @@ class InterventionScreenTest {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, 1.8f)) {
                 Box(Modifier.fillMaxWidth().height(480.dp)) {
-                    PauseTheme { InterventionScreen(state.value, {}, {}, { cancelled = true }, quote = longQuote) }
+                    PauseTheme {
+                        InterventionScreen(state.value, {}, {}, { cancelled = true },
+                            onContinue = { state.value = state.value.copy(phase = InterventionPhase.SELECTION) }, quote = longQuote)
+                    }
                 }
             }
         }
@@ -161,7 +221,11 @@ class InterventionScreenTest {
         compose.onNodeWithContentDescription("Inspirational quotes provided by ZenQuotes API. Open website")
             .performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Return to what matters").performScrollTo().assertIsDisplayed().performClick()
-        compose.runOnIdle { assertTrue(cancelled); state.value = state.value.copy(phase = InterventionPhase.SELECTION) }
+        compose.runOnIdle { assertTrue(cancelled); cancelled = false; state.value = state.value.copy(phase = InterventionPhase.DECISION, remainingMillis = 0L) }
+        compose.onNodeWithText("Do you still want to open YouTube?").assertIsDisplayed()
+        compose.onNodeWithText("Leave").performScrollTo().assertIsDisplayed().performClick()
+        compose.runOnIdle { assertTrue(cancelled) }
+        compose.onNodeWithText("Continue").performScrollTo().assertIsDisplayed().performClick()
         compose.onNodeWithText("How long would you\nlike to use YouTube?").assertIsDisplayed()
         compose.onNodeWithContentDescription("Start app session").performScrollTo().assertIsDisplayed()
     }

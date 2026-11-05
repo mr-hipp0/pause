@@ -6,17 +6,19 @@ This document holds implementation, behavior, and development details intentiona
 
 Pause uses a repeating intervention loop:
 
-`BREATHING → SELECTION → LAUNCHING → USING`
+`BREATHING → DECISION → SELECTION → LAUNCHING → USING`
 
-- Every opening of a protected app starts breathing and a fresh duration choice.
+- Every opening of a protected app starts breathing, an explicit continue-or-leave decision, and a fresh duration choice.
+- Finishing a breath settles the breathing screen and waits indefinitely. Continue opens the duration selector; Leave cancels the attempt and returns Home without allocating app time.
 - The allowance is capped at 300 seconds and begins only after the target app is confirmed in the foreground.
 - Time is charged only while the protected app is visibly eligible. Keyboards count as part of that app; brief covering system windows pause charging.
-- Staying in the app until expiry starts another breathing-and-selection cycle.
+- Staying in the app until expiry starts another breathing, decision, and selection cycle.
 - Leaving for Home, Recents, another app, or the lock screen ends the allowance and discards unused time.
 - Switching protected apps ends the first allowance and starts a fresh intervention for the second.
 - Cancellation returns Home and grants no access.
 - A failed launch, revoked service, or process restart never restores an unlimited allowance.
-- Preview exercises breathing and selection without opening a target or adding usage history.
+- Preview exercises breathing, the decision, and selection without opening a target or adding usage history. Leaving a preview returns to Pause.
+- Breathing, decision, and duration selection use immersive fullscreen. System bars are hidden and can be revealed temporarily with an edge swipe; content keeps safe padding for display cutouts.
 
 Each intervention has an immutable target and unique ID. Presentation ownership, event timestamps, and generation checks prevent delayed accessibility events or stale Activity callbacks from changing a newer session.
 
@@ -38,7 +40,7 @@ History writes are serialized. Reset waits for queued writes before clearing sto
 | `data` | Room/DataStore, migration, app catalog, offline quotes |
 | `feature-dashboard` | Protection overview and today's measured usage |
 | `feature-app-selector` | App discovery, search, categories, selection |
-| `feature-intervention` | Breathing, quotes, duration selector, launch/cancel |
+| `feature-intervention` | Breathing, quotes, continue/leave decision, duration selector, launch/cancel |
 | `feature-settings` | Global/per-app configuration, Preview, reset |
 | `feature-statistics` | Measured history and charts |
 | `service-interception` | Accessibility events, timing, presentation fallback |

@@ -47,8 +47,8 @@ class VisualScreenshotsTest {
         val profile = InstrumentationRegistry.getArguments().getString("pauseVisualProfile") ?: "standard"
         require(profile.matches(Regex("[a-z-]+")))
         fun capture(name: String, theme: ThemeMode) {
-            // Selection has a delayed incoming fade; capture its settled full-window frame.
-            SystemClock.sleep(if (name == "selection") 900 else 250)
+            // Intervention stages have a delayed incoming fade; capture their settled frames.
+            SystemClock.sleep(if (name == "selection" || name == "decision") 900 else 250)
             shell("screencap -p /sdcard/Download/pause-$profile-$name-${theme.name.lowercase()}.png")
         }
         try {
@@ -120,6 +120,12 @@ class VisualScreenshotsTest {
                         device.hasObject(By.text("Take a breath."))
                 }
                 capture("breathing", theme)
+                await("preview decision", 15_000) {
+                    dependencies.engine.state.value?.phase == InterventionPhase.DECISION &&
+                        device.hasObject(By.text("Continue")) && device.hasObject(By.text("Leave"))
+                }
+                capture("decision", theme)
+                click(device, "Continue")
                 await("duration preview", 15_000) { device.hasObject(By.desc("Start app session")) }
                 capture("selection", theme)
                 click(device, "Return to what matters")

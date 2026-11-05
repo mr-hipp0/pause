@@ -84,7 +84,7 @@ class PauseAccessibilityService : AccessibilityService() {
                     foregroundRecheckJob?.cancel()
                     presentationSessionId = null
                     NotificationManagerCompat.from(this@PauseAccessibilityService).cancel(NOTIFICATION_ID)
-                } else if (!session.isPreview && session.phase == InterventionPhase.BREATHING &&
+                } else if (!session.isPreview && session.phase.isIntervention() &&
                     lastForegroundPackage == session.target.packageName && !foregroundObscured && screenUsable()) {
                     // Includes an automatic new breathing session when foreground usage expires.
                     presentIntervention(session.id)
@@ -188,13 +188,13 @@ class PauseAccessibilityService : AccessibilityService() {
             dependencies.engine.begin(target, (protection.config ?: prefs.defaults).normalized())
         }
         dependencies.engine.state.value?.takeIf { !it.isPreview &&
-            (it.phase == InterventionPhase.BREATHING || it.phase == InterventionPhase.SELECTION) }
+            it.phase.isIntervention() }
             ?.let { presentIntervention(it.id) }
     }
 
     private fun presentIntervention(sessionId: String) {
         val session = dependencies.engine.state.value?.takeIf { it.id == sessionId && !it.isPreview } ?: return
-        if (session.phase != InterventionPhase.BREATHING && session.phase != InterventionPhase.SELECTION) return
+        if (!session.phase.isIntervention()) return
         if (!screenUsable() || foregroundObscured) return
         if (InterventionPresentation.visibleSessionId.value == sessionId ||
             (presentationSessionId == sessionId && presentationJob?.isActive == true)) return
@@ -208,7 +208,7 @@ class PauseAccessibilityService : AccessibilityService() {
                 waited += 40
             }
             val active = dependencies.engine.state.value?.takeIf { it.id == sessionId && !it.isPreview &&
-                (it.phase == InterventionPhase.BREATHING || it.phase == InterventionPhase.SELECTION) } ?: return@launch
+                it.phase.isIntervention() } ?: return@launch
             try {
                 startActivity(InterventionActivity.intent(this@PauseAccessibilityService))
             } catch (_: RuntimeException) {
@@ -221,6 +221,9 @@ class PauseAccessibilityService : AccessibilityService() {
             }
         }
     }
+
+    private fun InterventionPhase.isIntervention() =
+        this == InterventionPhase.BREATHING || this == InterventionPhase.DECISION || this == InterventionPhase.SELECTION
 
     private fun currentInputPackage() = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         ?.let(ComponentName::unflattenFromString)?.packageName

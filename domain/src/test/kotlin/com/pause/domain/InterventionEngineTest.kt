@@ -19,6 +19,46 @@ class InterventionEngineTest {
     private val other = InstalledApp("example.social", "Social", AppCategory.SOCIAL)
     private val config = InterventionConfig(breathingSeconds = 3, minUsageSeconds = 1)
 
+    @Test fun completedBreathWaitsForDecisionWithoutSelectingOrGrantingUsage() = runTest {
+        val history = MemoryHistory()
+        val engine = engine(history)
+        engine.begin(target, config)
+        advanceTimeBy(3_000); runCurrent()
+        val decision = requireNotNull(engine.state.value)
+        assertEquals(InterventionPhase.DECISION, decision.phase)
+        assertEquals(0L, decision.remainingMillis)
+        engine.selectDuration(120)
+        assertNull(engine.requestUsage())
+        engine.onForeground(target.packageName)
+        advanceTimeBy(600_000); runCurrent()
+        assertEquals(decision, engine.state.value)
+        val record = history.records.value.single()
+        assertNull(record.completedAtMillis)
+        assertNull(record.usageStartedAtMillis)
+        assertEquals(0, record.allocatedSeconds)
+        assertEquals(0L, record.usedMillis)
+    }
+
+    @Test fun leavingAtDecisionRecordsCancellationWithoutAnAllowance() = runTest {
+        val history = MemoryHistory()
+        val engine = engine(history)
+        engine.begin(target, config)
+        advanceTimeBy(3_000); runCurrent()
+        assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+        engine.finish(InterventionOutcome.CANCELLED)
+        engine.flushHistory()
+        assertNull(engine.state.value)
+        assertFalse(engine.continueToSelection())
+        advanceTimeBy(60_000); runCurrent()
+        assertNull(engine.state.value)
+        val record = history.records.value.single()
+        assertEquals(InterventionOutcome.CANCELLED, record.outcome)
+        assertNull(record.completedAtMillis)
+        assertNull(record.usageStartedAtMillis)
+        assertEquals(0, record.allocatedSeconds)
+        assertEquals(0L, record.usedMillis)
+    }
+
     @Test fun freshAttemptRequiresSelectionAndResetsStartingValue() = runTest {
         val engine = engine()
         choose(engine)
@@ -51,7 +91,7 @@ class InterventionEngineTest {
         assertEquals(RecordKind.USAGE, history.records.value.single().kind)
     }
 
-    @Test fun threeConsecutiveExpirationsEachStartFreshBreathingAndSelection() = runTest {
+    @Test fun threeConsecutiveExpirationsEachRequireFreshBreathingAndDecision() = runTest {
         val history = MemoryHistory()
         val engine = engine(history)
         engine.begin(target, config.copy(startUsageSeconds = 1))
@@ -60,6 +100,9 @@ class InterventionEngineTest {
             val id = requireNotNull(engine.state.value).id
             assertTrue(ids.add(id))
             advanceTimeBy(3_000); runCurrent()
+            assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+            assertNull(engine.requestUsage())
+            assertTrue(engine.continueToSelection())
             assertEquals(InterventionPhase.SELECTION, engine.state.value?.phase)
             engine.requestUsage(); engine.onForeground(target.packageName)
             advanceTimeBy(1_000); runCurrent()
@@ -167,17 +210,26 @@ class InterventionEngineTest {
         assertEquals(InterventionPhase.USING, engine.state.value?.phase)
     }
 
-    @Test fun startCannotSkipBreathingOrExtendExistingUsage() = runTest {
+    @Test fun continueAndStartCannotSkipBreathingOrRepeatDuringExistingUsage() = runTest {
         val engine = engine()
+        assertFalse(engine.continueToSelection())
         engine.begin(target, config)
+        assertFalse(engine.continueToSelection())
         assertNull(engine.requestUsage())
         assertNull(engine.finish(InterventionOutcome.CONTINUED))
         engine.onForeground(target.packageName)
         assertEquals(InterventionPhase.BREATHING, engine.state.value?.phase)
         advanceTimeBy(3_000); runCurrent()
+        assertNull(engine.requestUsage())
+        assertTrue(engine.continueToSelection())
+        assertFalse(engine.continueToSelection())
+        assertEquals(InterventionPhase.SELECTION, engine.state.value?.phase)
+        assertEquals(0L, engine.state.value?.usedMillis)
         assertNotNull(engine.requestUsage())
+        assertFalse(engine.continueToSelection())
         assertNull(engine.requestUsage())
         engine.onForeground(target.packageName)
+        assertFalse(engine.continueToSelection())
         assertNull(engine.requestUsage())
         assertNull(engine.finish(InterventionOutcome.CONTINUED))
     }
@@ -192,7 +244,12 @@ class InterventionEngineTest {
         assertEquals(id, engine.state.value?.id)
         assertEquals(1, history.records.value.size)
         advanceTimeBy(2_000); runCurrent()
-        assertEquals(InterventionPhase.SELECTION, engine.state.value?.phase)
+        assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+        assertFalse(engine.begin(target, config))
+        advanceTimeBy(10_000); runCurrent()
+        assertEquals(id, engine.state.value?.id)
+        assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+        assertEquals(1, history.records.value.size)
     }
 
     @Test fun previewEndsAtSelectionWithoutLaunchingOrWritingHistory() = runTest {
@@ -200,6 +257,9 @@ class InterventionEngineTest {
         val engine = engine(history)
         engine.begin(target, config, isPreview = true)
         advanceTimeBy(3_000); runCurrent()
+        assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+        assertNull(engine.requestUsage())
+        assertTrue(engine.continueToSelection())
         val selected = engine.requestUsage()
         assertTrue(requireNotNull(selected).isPreview)
         assertEquals(InterventionPhase.LAUNCHING, selected.phase)
@@ -218,6 +278,7 @@ class InterventionEngineTest {
         })
         engine.begin(target, config)
         elapsed = 4_000; advanceTimeBy(50); runCurrent()
+        assertTrue(engine.continueToSelection())
         engine.selectDuration(1); engine.requestUsage(); engine.onForeground(target.packageName)
         elapsed = 100_000; advanceTimeBy(50); runCurrent()
         assertEquals(InterventionPhase.BREATHING, engine.state.value?.phase)
@@ -255,6 +316,13 @@ class InterventionEngineTest {
         assertEquals(id, engine.state.value?.id)
         assertEquals(3_000L, engine.state.value?.remainingMillis)
         advanceTimeBy(3_000); runCurrent()
+        assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+        engine.restartBreathingForPresentation()
+        assertEquals(id, engine.state.value?.id)
+        assertEquals(InterventionPhase.BREATHING, engine.state.value?.phase)
+        assertEquals(3_000L, engine.state.value?.remainingMillis)
+        advanceTimeBy(3_000); runCurrent()
+        assertTrue(engine.continueToSelection())
         engine.requestUsage(); engine.onForeground(target.packageName)
         advanceTimeBy(1_000); runCurrent()
         engine.restartBreathingForPresentation()
@@ -304,6 +372,8 @@ class InterventionEngineTest {
     private fun TestScope.choose(engine: InterventionEngine, settings: InterventionConfig = config) {
         engine.begin(target, settings)
         advanceTimeBy(settings.breathingSeconds * 1000L); runCurrent()
+        assertEquals(InterventionPhase.DECISION, engine.state.value?.phase)
+        assertTrue(engine.continueToSelection())
         assertEquals(InterventionPhase.SELECTION, engine.state.value?.phase)
     }
 

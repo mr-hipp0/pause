@@ -102,7 +102,7 @@ class InterventionEngine(
             val existing = mutableState.value
             if (existing != null && existing.target.packageName == target.packageName &&
                 existing.isPreview == isPreview &&
-                existing.phase in setOf(InterventionPhase.BREATHING, InterventionPhase.SELECTION)) {
+                existing.phase in setOf(InterventionPhase.BREATHING, InterventionPhase.DECISION, InterventionPhase.SELECTION)) {
                 return@synchronized false
             }
             if (existing?.phase == InterventionPhase.USING) updateUsageLocked()
@@ -128,6 +128,14 @@ class InterventionEngine(
         startTimerLocked(session.remainingMillis)
     }
 
+    /** Finishing a breath only offers a choice; entering duration selection requires this action. */
+    fun continueToSelection(): Boolean = synchronized(lock) {
+        val current = mutableState.value ?: return@synchronized false
+        if (current.phase != InterventionPhase.DECISION) return@synchronized false
+        mutableState.value = current.copy(phase = InterventionPhase.SELECTION)
+        true
+    }
+
     fun selectDuration(seconds: Int) = synchronized(lock) {
         val current = mutableState.value ?: return@synchronized
         if (current.phase != InterventionPhase.SELECTION) return@synchronized
@@ -139,7 +147,7 @@ class InterventionEngine(
     /** A delayed presentation must still show the complete breath, never reset a running allowance. */
     fun restartBreathingForPresentation() = synchronized(lock) {
         val current = mutableState.value ?: return@synchronized
-        if (current.phase !in setOf(InterventionPhase.BREATHING, InterventionPhase.SELECTION)) return@synchronized
+        if (current.phase !in setOf(InterventionPhase.BREATHING, InterventionPhase.DECISION, InterventionPhase.SELECTION)) return@synchronized
         val next = current.copy(
             phase = InterventionPhase.BREATHING,
             selectedSeconds = current.config.startUsageSeconds,
@@ -299,7 +307,7 @@ class InterventionEngine(
                             val remaining = (deadlineMillis - clock.elapsedRealtimeMillis()).coerceAtLeast(0)
                             mutableState.value = current.copy(
                                 remainingMillis = remaining,
-                                phase = if (remaining == 0L) InterventionPhase.SELECTION else InterventionPhase.BREATHING,
+                                phase = if (remaining == 0L) InterventionPhase.DECISION else InterventionPhase.BREATHING,
                             )
                             remaining == 0L
                         }
@@ -309,7 +317,7 @@ class InterventionEngine(
                                 true
                             } else false
                         }
-                        InterventionPhase.SELECTION -> true
+                        InterventionPhase.DECISION, InterventionPhase.SELECTION -> true
                     }
                 }
                 if (finished) break

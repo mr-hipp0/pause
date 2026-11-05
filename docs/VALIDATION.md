@@ -77,3 +77,26 @@ Install **artifacts/Pause-0.4.0-debug.apk** over the existing app. This stable a
 The final APK contains all 16 records locally. It adds no Internet permission, API key, scheduled refresh, account, or quote-service dependency at runtime. Public redistribution of a permanent collection still needs the provider's applicable permission clarified; API caching support is not treated as a full database-export licence.
 
 Phone hardware, other Android/OEM versions, split-screen/Picture-in-Picture, deep-link launches, reboot/force-stop recovery, and perceived haptics/audio retain the outstanding physical-device scenarios in the matrix.
+
+## Post-breathing decision follow-up
+
+Validated November 3, 2026 (America/Chicago), on the same isolated Android 16 emulator. Breathing now ends in a settled decision state. Continue explicitly opens duration selection; Leave cancels without allocating usage and returns Home. Preview returns to Pause when leaving.
+
+- **29 JVM tests pass:** 26 domain and 3 presentation tests. Coverage includes an idle decision, guarded continuation, cancellation without an allowance, previews, and repeated expirations.
+- **14 intervention UI tests pass, including 4 captures:** both choices, the five-minute cap, quote/source behavior, and enlarged text. [Reviewed decision screen](screenshots/pause-decision.png).
+- **2 actual Activity/service tests pass together:** decision persistence through Activity recreation, both preview choices without history changes, three real cross-app expiration cycles, explicit continuation, and Leave with zero allocated/used time.
+- Debug app and test APK builds pass. Lint passes for feature-intervention and service-interception with zero errors and existing warnings.
+
+Evidence: `.tooling/decision-build.log`, `decision-checks.log`, `decision-activity-build.log`, `decision-ui.log`, and `decision-app.log`. An initial combined fixture run exposed an automation connection interaction; using UiAutomator consistently in both Activity/service fixtures resolved it, and the final combined run passes.
+
+The follow-up APK is **artifacts/Pause-0.4.0-decision-debug.apk**, signed with the existing debug certificate so it can update the previous installation. SHA-256: `d20f6924c03f02a21969782b5ea92a18fd9c114abf3f998062239eb136de6782`.
+
+## Immersive fullscreen follow-up
+
+Validated November 5, 2026 (America/Chicago), on the isolated Android 16 emulator. The intervention window hides status and navigation bars during breathing, decision, and duration selection. Edge swipes can reveal transient system controls. The background fills the display while safe padding protects content around display cutouts.
+
+- Debug app/test APK builds and feature-intervention lint pass with zero errors.
+- Both actual Activity/service fixtures pass together. The Activity fixture checks status and navigation visibility separately during breathing, decision, recreation, and selection, and retains Continue/Leave and preview-history checks. The service fixture verifies repeated real cross-app usage cycles.
+- The capture fixture was rerun successfully after adding dismissal of Android's one-time immersive-mode tutorial. [Full-window preview, 480 × 960](screenshots/pause-fullscreen-decision.png); the emulator's 128px cutout inset remains protected at the top.
+
+Evidence: `.tooling/fullscreen-build.log`, `fullscreen-device.log`, `fullscreen-capture-build.log`, and `fullscreen-capture.log`. The installable update is **artifacts/Pause-0.4.0-fullscreen-debug.apk**, signed with the existing debug certificate. SHA-256: `e67066baf5621fcc24f0a78eb74afa5ba35ce1a6a42a4930719259a1192dbe17`.

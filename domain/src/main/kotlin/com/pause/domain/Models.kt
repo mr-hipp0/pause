@@ -70,7 +70,7 @@ data class InterventionRecord(
     val usageStartedAtMillis: Long? = null,
 )
 
-enum class InterventionPhase { BREATHING, SELECTION, LAUNCHING, USING }
+enum class InterventionPhase { BREATHING, DECISION, SELECTION, LAUNCHING, USING }
 
 data class InterventionSession(
     val id: String,

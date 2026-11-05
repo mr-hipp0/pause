@@ -9,6 +9,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,6 +35,7 @@ class InterventionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        enterFullscreen()
         if (savedInstanceState == null && dependencies.engine.state.value?.phase.isIntervention()) {
             dependencies.engine.restartBreathingForPresentation()
         }
@@ -62,6 +65,7 @@ class InterventionActivity : ComponentActivity() {
                         onDurationChange = dependencies.engine::selectDuration,
                         onStart = ::startSession,
                         onCancel = ::cancelIntervention,
+                        onContinue = { continueToSelection(active.id) },
                         quote = quote,
                         onQuoteSource = { openQuoteSource(active.id) },
                     )
@@ -73,7 +77,7 @@ class InterventionActivity : ComponentActivity() {
     private fun openQuoteSource(sessionId: String) {
         val current = dependencies.engine.state.value ?: return
         if (current.id != sessionId || current.id != presentedSessionId ||
-            current.phase != InterventionPhase.BREATHING || !current.config.showQuotes ||
+            current.phase !in setOf(InterventionPhase.BREATHING, InterventionPhase.DECISION) || !current.config.showQuotes ||
             leavingIntentionally || sourceNavigationPending || !InterventionPresentation.isOwner(presentationToken)) return
         sourceNavigationPending = true
         try {
@@ -92,6 +96,14 @@ class InterventionActivity : ComponentActivity() {
         val session = dependencies.engine.finish(InterventionOutcome.CANCELLED)
         if (session != null && !session.isPreview) returnHome()
         finish()
+    }
+
+    private fun continueToSelection(sessionId: String) {
+        val current = dependencies.engine.state.value ?: return
+        if (current.id != sessionId || current.id != presentedSessionId ||
+            current.phase != InterventionPhase.DECISION || leavingIntentionally || sourceNavigationPending ||
+            !InterventionPresentation.isOwner(presentationToken)) return
+        dependencies.engine.continueToSelection()
     }
 
     private fun startSession() {
@@ -128,6 +140,18 @@ class InterventionActivity : ComponentActivity() {
         runCatching {
             startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
+    }
+
+    private fun enterFullscreen() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) enterFullscreen()
     }
 
     override fun onStop() {
@@ -173,7 +197,8 @@ class InterventionActivity : ComponentActivity() {
         }
     }
 
-    private fun InterventionPhase?.isIntervention() = this == InterventionPhase.BREATHING || this == InterventionPhase.SELECTION
+    private fun InterventionPhase?.isIntervention() =
+        this == InterventionPhase.BREATHING || this == InterventionPhase.DECISION || this == InterventionPhase.SELECTION
 
     companion object {
         fun intent(context: Context): Intent = Intent(context, InterventionActivity::class.java)

@@ -150,6 +150,18 @@ class RealInterceptionTest {
             }
 
             fun chooseAndStart(app: InstalledApp, id: String, seconds: Int) {
+                await("continue-or-leave decision for ${app.packageName}", 8_000) {
+                    val session = dependencies.engine.state.value
+                    session?.id == id && session.phase == InterventionPhase.DECISION &&
+                        device.hasObject(By.text("Continue")) && device.hasObject(By.text("Leave"))
+                }
+                SystemClock.sleep(700)
+                assertEquals("Finishing a breath must wait for an explicit choice", InterventionPhase.DECISION,
+                    dependencies.engine.state.value!!.phase)
+                assertEquals(id, dependencies.engine.state.value!!.id)
+                assertFalse("The duration selector must wait for Continue", device.hasObject(By.desc("Start app session")))
+                assertEquals("Deciding must not consume app time", 0L, dependencies.engine.state.value!!.usedMillis)
+                clickText(device, "Continue")
                 await("fresh duration choice for ${app.packageName}", 8_000) {
                     val session = dependencies.engine.state.value
                     session?.id == id && session.phase == InterventionPhase.SELECTION &&
@@ -184,21 +196,15 @@ class RealInterceptionTest {
             }
 
             // The countdown runs while the real target is usable. Each expiration creates a new
-            // visible breathing exercise and a fresh explicit choice; there is no waiting gate.
+            // visible breathing exercise, an explicit continue-or-leave choice, and a duration choice.
             launch(target)
             var cycleId = intercepted(target)
             val expiredIds = mutableListOf<String>()
             repeat(3) { cycle ->
-                await("cycle $cycle duration selection", 8_000) {
-                    dependencies.engine.state.value?.let { it.id == cycleId && it.phase == InterventionPhase.SELECTION } == true
+                await("cycle $cycle conscious decision", 8_000) {
+                    dependencies.engine.state.value?.let { it.id == cycleId && it.phase == InterventionPhase.DECISION } == true
                 }
                 val choiceId = cycleId
-                if (cycle == 0) {
-                    SystemClock.sleep(700)
-                    assertEquals("Choosing a duration must never start access automatically", InterventionPhase.SELECTION,
-                        dependencies.engine.state.value!!.phase)
-                    assertEquals(choiceId, dependencies.engine.state.value!!.id)
-                }
                 chooseAndStart(target, choiceId, 4)
                 expiredIds += choiceId
                 cycleId = intercepted(target)
@@ -211,8 +217,16 @@ class RealInterceptionTest {
                 assertTrue(record.usageStartedAtMillis != null)
                 assertEquals("Usage must not be mislabeled as a historical waiting period", 0, record.waitSeconds)
             }
-            clickText(device, "Return to what matters")
+            await("decision after the third expiration", 8_000) {
+                dependencies.engine.state.value?.let { it.id == cycleId && it.phase == InterventionPhase.DECISION } == true
+            }
+            clickText(device, "Leave")
             await("cancel after the third expiration", 5_000) { dependencies.engine.state.value == null }
+            await("Leave returns Home", 5_000) { device.currentPackageName != context.packageName && device.currentPackageName != target.packageName }
+            val declined = savedRecord(cycleId)
+            assertEquals(InterventionOutcome.CANCELLED, declined.outcome)
+            assertEquals(0, declined.allocatedSeconds)
+            assertEquals(0L, declined.usedMillis)
 
             // A longer new allowance leaves enough real foreground time to inspect transient
             // coverage and to leave before it expires. B keeps independent four-second settings.

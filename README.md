@@ -2,15 +2,21 @@
 
 ### Use the app when you need it. Pause before you don't.
 
-I built Pause because normal app timers were never quite enough.
+I built Pause because I was tired of losing time to my phone without even realizing it, especially doomscrolling right before bed or immediately after waking up. Time is valuable, and I don't want hours of my life, my sleep schedule, or the start and end of my day decided by an endless feed.
 
-A daily limit treats every use the same. I might spend my allowance early, then genuinely need YouTube later for a tutorial or Instagram to answer someone. And once I bypassed the limit, the blocker usually stopped helping altogether.
+And this isn't just a personal problem. **Americans spend an average of 6.3 hours a day on their phones.** That's roughly **96 full days every year** spent looking at a screen.
 
-Pause takes a different approach: **make one small, intentional choice every time you open a distracting app.**
+That's the problem I found with normal app timers: they limit **how much** you can use an app, but they don't change **how** you use it. If Instagram has a 30-minute daily limit, it's still easy to open it with no purpose and mindlessly scroll until those 30 minutes are gone.
+
+**Pause changes the question.**
+
+Instead of asking, *"How much time can I spend on this app today?"* it asks, *"Do I actually want to spend the next few minutes here?"*
+
+Every time you open a distracting app, you make a small, intentional decision:
 
 **Open app → Breathe → Choose up to 5 minutes → Use it → Pause again**
 
-Instead of deciding how much access you deserve for an entire day, you decide whether the *next few minutes* are worth it.
+You can still use YouTube when you need a tutorial. You can still open Instagram to answer someone. Pause isn't about keeping you off your phone. It's about making sure **you're the one deciding when and why you're on it.**
 
 <p>
   <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-8A7FF0">

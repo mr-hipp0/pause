@@ -11,10 +11,10 @@ if (-not (Test-Path -LiteralPath $apk)) { throw 'Build :feature-intervention:ass
 if ($LASTEXITCODE -ne 0) { throw 'Could not install the screenshot test APK.' }
 $result = & $adb -s $Serial shell am instrument -w -e class com.pause.feature.intervention.InterventionScreenshotsTest com.pause.feature.intervention.test/androidx.test.runner.AndroidJUnitRunner
 $result | Write-Output
-if (($result -join "`n") -notmatch 'OK \(3 tests\)') { throw 'Screenshot capture tests did not all pass.' }
+if (($result -join "`n") -notmatch 'OK \(4 tests\)') { throw 'Screenshot capture tests did not all pass.' }
 $destination = Join-Path $project 'docs\screenshots'
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
-foreach ($screen in @('pause-breathing.png', 'pause-selection.png', 'pause-breathing-no-quotes.png')) {
+foreach ($screen in @('pause-breathing.png', 'pause-decision.png', 'pause-selection.png', 'pause-breathing-no-quotes.png')) {
     & $adb -s $Serial pull "/sdcard/Android/data/com.pause.feature.intervention.test/files/screenshots/$screen" (Join-Path $destination $screen)
     if ($LASTEXITCODE -ne 0) { throw "Could not retrieve $screen" }
 }

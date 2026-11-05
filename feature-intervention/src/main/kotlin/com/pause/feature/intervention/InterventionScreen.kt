@@ -53,6 +53,7 @@ fun InterventionScreen(
     onDurationChange: (Int) -> Unit,
     onStart: () -> Unit,
     onCancel: () -> Unit,
+    onContinue: () -> Unit,
     quote: BreathingQuote? = null,
     onQuoteSource: () -> Unit = {},
 ) {
@@ -89,34 +90,65 @@ fun InterventionScreen(
             // Each stage owns its scroll position; a large-font breathing screen cannot offset selection.
             key(phase) {
                 when (phase) {
-                    InterventionPhase.BREATHING -> InterventionPage(
-                        minimumHeroDiameter = 200.dp,
-                        header = {
-                            InterventionHeader(session.isPreview, "Take a breath.", "A little space before ${session.target.name}.")
-                        },
-                        cue = {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(breathLabel, style = MaterialTheme.typography.titleLarge)
-                                Text("${ceil(session.remainingMillis / 1000.0).toInt()} seconds remaining", Modifier.padding(top = 6.dp),
-                                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        },
-                        footer = {
-                            Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (session.config.showQuotes && quote != null) {
-                                    ReflectionCard(quote, onQuoteSource)
-                                    Spacer(Modifier.height(12.dp))
+                    InterventionPhase.BREATHING, InterventionPhase.DECISION -> {
+                        val deciding = phase == InterventionPhase.DECISION
+                        InterventionPage(
+                            minimumHeroDiameter = if (deciding) 112.dp else 200.dp,
+                            header = {
+                                if (deciding) {
+                                    InterventionHeader(session.isPreview, "Do you still want to open ${session.target.name}?",
+                                        "Take your time. The next step is your choice.")
+                                } else {
+                                    InterventionHeader(session.isPreview, "Take a breath.", "A little space before ${session.target.name}.")
                                 }
-                                CancelAction(onCancel)
-                            }
-                        },
-                        hero = { diameter -> BreathingCircle(breathProgress, session.config.animation == BreathingAnimation.RIPPLE, breathLabel, diameter) },
-                    )
+                            },
+                            cue = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    if (deciding) {
+                                        Text("Breathing complete.", Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                                            style = MaterialTheme.typography.titleLarge)
+                                    } else {
+                                        Text(breathLabel, style = MaterialTheme.typography.titleLarge)
+                                        Text("${ceil(session.remainingMillis / 1000.0).toInt()} seconds remaining", Modifier.padding(top = 6.dp),
+                                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            },
+                            footer = {
+                                Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    if (session.config.showQuotes && quote != null) {
+                                        ReflectionCard(quote, onQuoteSource)
+                                        Spacer(Modifier.height(12.dp))
+                                    }
+                                    if (deciding) {
+                                        Button(onClick = onContinue,
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = PauseDimensions.ControlHeight)
+                                                .semantics { contentDescription = "Continue to choose app time" },
+                                            shape = PauseDimensions.ControlShape) {
+                                            Text("Continue", style = MaterialTheme.typography.labelLarge)
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        OutlinedButton(onClick = onCancel,
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = PauseDimensions.ControlHeight),
+                                            shape = PauseDimensions.ControlShape) {
+                                            Text("Leave", style = MaterialTheme.typography.labelLarge)
+                                        }
+                                    } else {
+                                        CancelAction(onCancel)
+                                    }
+                                }
+                            },
+                            hero = { diameter ->
+                                BreathingCircle(if (deciding) 0f else breathProgress, session.config.animation == BreathingAnimation.RIPPLE,
+                                    if (deciding) "Breathing complete" else breathLabel, diameter)
+                            },
+                        )
+                    }
                     InterventionPhase.SELECTION -> InterventionPage(
                         minimumHeroDiameter = 188.dp,
                         header = {
                             InterventionHeader(session.isPreview, "How long would you\nlike to use ${session.target.name}?",
-                                "Choose a little app time. When it ends, we'll pause together again.", "02 / CHOOSE YOUR TIME")
+                                "Choose a little app time. When it ends, we'll pause together again.", "03 / CHOOSE YOUR TIME")
                         },
                         cue = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -26,6 +26,7 @@ class InterventionScreenshotsTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun captureBreathing() = capture(InterventionPhase.BREATHING, 3_000L)
+    @Test fun captureBreathingDecision() = capture(InterventionPhase.DECISION, 0L)
     @Test fun captureDurationSelectionAtMaximum() = capture(InterventionPhase.SELECTION, 0L, selected = 300)
     @Test fun captureBreathingWithoutQuotes() = capture(InterventionPhase.BREATHING, 3_000L, showQuotes = false)
 
@@ -35,7 +36,7 @@ class InterventionScreenshotsTest {
                 InterventionScreen(
                     InterventionSession("screenshot", InstalledApp("com.google.android.youtube", "YouTube", AppCategory.VIDEO),
                         InterventionConfig(haptics = false, showQuotes = showQuotes), phase, selected, remaining, 1_700_000_000_000L),
-                    onDurationChange = {}, onStart = {}, onCancel = {},
+                    onDurationChange = {}, onStart = {}, onCancel = {}, onContinue = {},
                     quote = BreathingQuote("zenquotes-docs-sample", "The friend is the man who knows all about you, and still likes you.", "Elbert Hubbard"),
                 )
             }
